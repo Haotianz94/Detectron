@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=1 python tools/infer_simple.py --wts pretrained_models/X-101-32x8d-FPN.pkl --cfg configs/12_2017_baselines/e2e_keypoint_rcnn_X-101-32x8d-FPN_s1x.yaml --output-dir output2 input2
