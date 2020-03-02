@@ -32,7 +32,6 @@ import logging
 import os
 import sys
 import time
-import pickle
 
 from caffe2.python import workspace
 
@@ -112,12 +111,6 @@ def parse_args():
         type=float
     )
     parser.add_argument(
-        '--batch-idx',
-        dest='batch_idx',
-        default=0,
-        type=int
-    )
-    parser.add_argument(
         'im_or_folder', help='image or folder of images', default=None
     )
     if len(sys.argv) == 1:
@@ -147,7 +140,6 @@ def main(args):
     else:
         im_list = [args.im_or_folder]
 
-    result = {}
     for i, im_name in enumerate(im_list):
         out_name = os.path.join(
             args.output_dir, '{}'.format(os.path.basename(im_name) + '.' + args.output_ext)
@@ -169,29 +161,21 @@ def main(args):
                 'rest (caches and auto-tuning need to warm up)'
             )
 
-        vid, fid = os.path.basename(im_name).replace('.jpg', '').split('-')
-        vid, fid = int(vid), int(fid)
-        if not vid in result:
-            result[vid] = {}
-        result[vid][fid] = {'bbox': cls_boxes, 'segm': cls_segms, 'keyp': cls_keyps}
-
-    pickle.dump(result, open('{}/detectron-{}.pkl'.format(args.output_dir, args.batch_idx), 'wb'), protocol=2)
-
-        # vis_utils.vis_one_image(
-        #     im[:, :, ::-1],  # BGR -> RGB for visualization
-        #     im_name,
-        #     args.output_dir,
-        #     cls_boxes,
-        #     cls_segms,
-        #     cls_keyps,
-        #     dataset=dummy_coco_dataset,
-        #     box_alpha=0.3,
-        #     show_class=True,
-        #     thresh=args.thresh,
-        #     kp_thresh=args.kp_thresh,
-        #     ext=args.output_ext,
-        #     out_when_no_box=args.out_when_no_box
-        # )
+        vis_utils.vis_one_image(
+            im[:, :, ::-1],  # BGR -> RGB for visualization
+            im_name,
+            args.output_dir,
+            cls_boxes,
+            cls_segms,
+            cls_keyps,
+            dataset=dummy_coco_dataset,
+            box_alpha=0.3,
+            show_class=True,
+            thresh=args.thresh,
+            kp_thresh=args.kp_thresh,
+            ext=args.output_ext,
+            out_when_no_box=args.out_when_no_box
+        )
 
 
 if __name__ == '__main__':
