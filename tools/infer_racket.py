@@ -121,8 +121,14 @@ def parse_args():
         type=int
     )
     parser.add_argument(
-        '--batch-id',
-        dest='batch_id',
+        '--num-split',
+        dest='num_split',
+        default=0,
+        type=int
+    )
+    parser.add_argument(
+        '--split-id',
+        dest='split_id',
         default=0,
         type=int
     )
@@ -157,15 +163,9 @@ def main(args):
 
     im_list = list(im_list)
     im_list.sort()
-     
-    num_split = {8 : 2, 9 : 4, 10 : 4, 11 : 1, 12 : 1}
-    num_frames = len(im_list) // num_split[args.video_id]
-    if args.batch_id < num_split[args.video_id] - 1:
-        im_list = im_list[args.batch_id * num_frames: (args.batch_id + 1) * num_frames]
-    else:
-        im_list = im_list[args.batch_id * num_frames: ]
+    im_list = [im_list[i] for i in range(args.split_id, len(im_list), args.num_split)] 
 
-    print('Process video {} {} for {} frames', args.video_id, args.batch_id, len(im_list))
+    print('Process video {} {} for {} frames', args.video_id, args.split_id, len(im_list))
 
     result = {}
     for idx, im_name in enumerate(im_list):
@@ -230,9 +230,10 @@ def main(args):
         #     out_when_no_box=args.out_when_no_box
         # )
         if idx % 100 == 0:
-            pickle.dump(result, open('{}/detectron-keyp-{}-{}.pkl'.format(args.output_dir, args.video_id, args.batch_id), 'wb'), protocol=2)
+            pickle.dump(result, open('{}/detectron-keyp-{}-{}.pkl'.format(args.output_dir, args.video_id, args.split_id), 'wb'), protocol=2)
+            logger.info('Finished: {} in {}'.format(idx, len(im_list)))
 
-    pickle.dump(result, open('{}/detectron-keyp-{}-{}.pkl'.format(args.output_dir, args.video_id, args.batch_id), 'wb'), protocol=2)
+    pickle.dump(result, open('{}/detectron-keyp-{}-{}.pkl'.format(args.output_dir, args.video_id, args.split_id), 'wb'), protocol=2)
 
 
 if __name__ == '__main__':
