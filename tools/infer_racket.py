@@ -35,6 +35,7 @@ import time
 import pickle
 import numpy as np
 import json
+from tqdm import tqdm
 
 from caffe2.python import workspace
 
@@ -132,6 +133,12 @@ def parse_args():
         default=0,
         type=int
     )
+    parser.add_argument(
+        '--task',
+	dest='task',
+	default='mask',
+	type=str
+    )
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
@@ -165,13 +172,19 @@ def main(args):
     im_list.sort()
     im_list = [im_list[i] for i in range(args.split_id, len(im_list), args.num_split)] 
 
-    print('Process video {} {} for {} frames', args.video_id, args.split_id, len(im_list))
-
-    result = {}
-    for idx, im_name in enumerate(im_list):
+    print('Process {} on video {} {} for {} frames'.format(args.task, args.video_id, args.split_id, len(im_list)))
+    
+    result_path = '{}/detectron-{}-{}-{}.pkl'.format(args.output_dir, args.task, args.video_id, args.split_id)
+    if os.path.exists(result_path):
+	result = pickle.load(open(result_path, 'rb'))
+    else:    
+        result = {}
+    for idx, im_name in tqdm(enumerate(im_list)):
         fid = int(im_name.split('/')[-1][:-4])
-        
-        logger.info('Processing {} '.format(im_name))
+        if (args.video_id, fid) in result:
+	    continue        
+
+        logger.info('Split {} processing {}th image: {} '.format(args.split_id, idx, im_name))
         im = cv2.imread(im_name)
         if im is None:
             continue
@@ -208,9 +221,9 @@ def main(args):
         # cls_boxes = cls_boxes_update
         # cls_segms = cls_segms_update
 
-        logger.info('Inference time: {:.3f}s'.format(time.time() - t))
-        for k, v in timers.items():
-            logger.info(' | {}: {:.3f}s'.format(k, v.average_time))
+        #logger.info('Inference time: {:.3f}s'.format(time.time() - t))
+        #for k, v in timers.items():
+        #    logger.info(' | {}: {:.3f}s'.format(k, v.average_time))
        
         result[(args.video_id, fid)] = {'bbox': cls_boxes, 'segm': cls_segms, 'keyp': cls_keyps}
 
@@ -230,10 +243,9 @@ def main(args):
         #     out_when_no_box=args.out_when_no_box
         # )
         if idx % 100 == 0:
-            pickle.dump(result, open('{}/detectron-keyp-{}-{}.pkl'.format(args.output_dir, args.video_id, args.split_id), 'wb'), protocol=2)
-            logger.info('Finished: {} in {}'.format(idx, len(im_list)))
+            pickle.dump(result, open(result_path, 'wb'), protocol=2)
 
-    pickle.dump(result, open('{}/detectron-keyp-{}-{}.pkl'.format(args.output_dir, args.video_id, args.split_id), 'wb'), protocol=2)
+    pickle.dump(result, open(result_path, 'wb'), protocol=2)
 
 
 if __name__ == '__main__':
